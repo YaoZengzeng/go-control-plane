@@ -50,9 +50,11 @@ const (
 	AlsCluster = "als_cluster"
 
 	// Ads mode for resources: one aggregated xDS service
+	// Ads模式：一个聚合的xDS service
 	Ads = "ads"
 
 	// Xds mode for resources: individual xDS services.
+	// Xds模式：单个的xDS服务
 	Xds = "xds"
 
 	// Rest mode for resources: polling using Fetch.

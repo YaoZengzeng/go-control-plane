@@ -49,6 +49,7 @@ func main() {
 	cache := cache.NewSnapshotCache(false, cache.IDHash{}, l)
 
 	// Create the snapshot that we'll serve to Envoy
+	// 创建snapshot，我们用它来服务Envoy
 	snapshot := example.GenerateSnapshot()
 	if err := snapshot.Consistent(); err != nil {
 		l.Errorf("snapshot inconsistency: %+v\n%+v", snapshot, err)
@@ -57,12 +58,14 @@ func main() {
 	l.Debugf("will serve snapshot %+v", snapshot)
 
 	// Add the snapshot to the cache
+	// 将snapshot加入到缓存中
 	if err := cache.SetSnapshot(context.Background(), nodeID, snapshot); err != nil {
 		l.Errorf("snapshot error %q for %+v", err, snapshot)
 		os.Exit(1)
 	}
 
 	// Run the xDS server
+	// 运行xDS server
 	ctx := context.Background()
 	cb := &test.Callbacks{Debug: l.Debug}
 	srv := server.NewServer(ctx, cache, cb)

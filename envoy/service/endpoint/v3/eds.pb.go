@@ -306,6 +306,7 @@ func (c *endpointDiscoveryServiceClient) FetchEndpoints(ctx context.Context, in 
 type EndpointDiscoveryServiceServer interface {
 	// The resource_names field in DiscoveryRequest specifies a list of clusters
 	// to subscribe to updates for.
+	// 在DiscoveryRequest中的resource_names字段指定了一系列的clusters用于订阅更新
 	StreamEndpoints(EndpointDiscoveryService_StreamEndpointsServer) error
 	DeltaEndpoints(EndpointDiscoveryService_DeltaEndpointsServer) error
 	FetchEndpoints(context.Context, *v3.DiscoveryRequest) (*v3.DiscoveryResponse, error)

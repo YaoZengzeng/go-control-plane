@@ -50,6 +50,7 @@ type Callbacks interface {
 }
 
 // NewServer creates handlers from a config watcher and callbacks.
+// NewServer从一个config watcher以及callbacks创建handlers
 func NewServer(ctx context.Context, config cache.ConfigWatcher, callbacks Callbacks) Server {
 	return &server{cache: config, callbacks: callbacks, ctx: ctx}
 }
@@ -73,6 +74,7 @@ type lastDiscoveryResponse struct {
 }
 
 // process handles a bi-di stream request
+// process处理一个双向的stream request
 func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryRequest, defaultTypeURL string) error {
 	// increment stream count
 	streamID := atomic.AddInt64(&s.streamCount, 1)
@@ -85,6 +87,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 	lastDiscoveryResponses := map[string]lastDiscoveryResponse{}
 
 	// a collection of stack allocated watches per request type
+	// 对于每种request type，一系列的watches
 	watches := newWatches()
 
 	defer func() {
@@ -95,6 +98,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 	}()
 
 	// sends a response by serializing to protobuf Any
+	// 发送一个response，通过序列化到protobuf Any
 	send := func(resp cache.Response) (string, error) {
 		if resp == nil {
 			return "", errors.New("missing response")
@@ -119,6 +123,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 		lastDiscoveryResponses[resp.GetRequest().TypeUrl] = lastResponse
 
 		if s.callbacks != nil {
+			// 调用onStreamReponse的回调
 			s.callbacks.OnStreamResponse(resp.GetContext(), streamID, resp.GetRequest(), out)
 		}
 		return out.Nonce, str.Send(out)
@@ -131,9 +136,11 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 	}
 
 	// node may only be set on the first discovery request
+	// node只在第一次discovery request的时候设置
 	var node = &core.Node{}
 
 	// recompute dynamic channels for this stream
+	// 从这个stream动态计算channel
 	watches.recompute(s.ctx, reqCh)
 
 	for {
@@ -147,6 +154,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 		case 0:
 			return nil
 		// Case 1 handles any request inbound on the stream and handles all initialization as needed
+		// Case 1处理任何包含在stream中的请求并且处理所有的初始化
 		case 1:
 			// input stream ended or errored out
 			if !ok {
@@ -213,6 +221,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 			}
 
 			// Recompute the dynamic select cases for this stream.
+			// 为这个stream重新计算dynamic select cases
 			watches.recompute(s.ctx, reqCh)
 		default:
 			// Channel n -> these are the dynamic list of responders that correspond to the stream request typeURL
@@ -221,6 +230,7 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 				return status.Errorf(codes.Unavailable, "resource watch %d -> failed", index)
 			}
 
+			// 转换为cache.Response
 			res := value.Interface().(cache.Response)
 			nonce, err := send(res)
 			if err != nil {
@@ -233,8 +243,10 @@ func (s *server) process(str stream.Stream, reqCh <-chan *discovery.DiscoveryReq
 }
 
 // StreamHandler converts a blocking read call to channels and initiates stream processing
+// StreamHandler转换一个blocking read到channels并且初始化stream的处理
 func (s *server) StreamHandler(stream stream.Stream, typeURL string) error {
 	// a channel for receiving incoming requests
+	// 一个channel用于接收到达的请求
 	reqCh := make(chan *discovery.DiscoveryRequest)
 	go func() {
 		defer close(reqCh)

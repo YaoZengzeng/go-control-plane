@@ -63,6 +63,8 @@ type ResourceSnapshot interface {
 // all EDS clusters, and the LDS response names all RDS routes in a snapshot,
 // to ensure that Envoy makes the request for all EDS clusters or RDS routes
 // eventually.
+// SnapshotCache是一个基于snapshot的缓存，维护了每个节点的单个版本的资源的snapshot
+// SnapshotCache一致地回复最新的snapshot
 //
 // SnapshotCache can operate as a REST or regular xDS backend. The snapshot
 // can be partial, e.g. only include RDS or EDS resources.
@@ -72,9 +74,12 @@ type SnapshotCache interface {
 	// SetSnapshot sets a response snapshot for a node. For ADS, the snapshots
 	// should have distinct versions and be internally consistent (e.g. all
 	// referenced resources must be included in the snapshot).
+	// SetSnapshot为一个node设置一个response snapshot，对于ADS，snapshots应该有不同的
+	// 版本并且内部一致（例如，所有引用的资源都必须包含在snapshot中）
 	//
 	// This method will cause the server to respond to all open watches, for which
 	// the version differs from the snapshot version.
+	// 这个方法会导致server回复所有的open watches，version和snapshot version不同
 	SetSnapshot(ctx context.Context, node string, snapshot ResourceSnapshot) error
 
 	// GetSnapshots gets the snapshot for a node.
@@ -124,6 +129,8 @@ type snapshotCache struct {
 // snapshot consistency. For non-ADS case (and fetch), multiple partial
 // requests are sent across multiple streams and re-using the snapshot version
 // is OK.
+// ADS flag在回复streaming requests的时候强制执行一个delay，直到所有的资源都在请求中
+// 被显式地命名
 //
 // Logger is optional.
 func NewSnapshotCache(ads bool, hash NodeHash, logger log.Logger) SnapshotCache {
@@ -217,20 +224,24 @@ func (cache *snapshotCache) sendHeartbeats(ctx context.Context, node string) {
 }
 
 // SetSnapshotCacheContext updates a snapshot for a node.
+// SetSnapshotCacheContext更新一个节点的snapshot
 func (cache *snapshotCache) SetSnapshot(ctx context.Context, node string, snapshot ResourceSnapshot) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
 	// update the existing entry
+	// 更新已经存在的entry
 	cache.snapshots[node] = snapshot
 
 	// trigger existing watches for which version changed
+	// 对于版本的变更，触发已经存在的watches
 	if info, ok := cache.status[node]; ok {
 		info.mu.Lock()
 		defer info.mu.Unlock()
 		for id, watch := range info.watches {
 			version := snapshot.GetVersion(watch.Request.TypeUrl)
 			if version != watch.Request.VersionInfo {
+				// 用新的版本进行response
 				cache.log.Debugf("respond open watch %d%v with new version %q", id, watch.Request.ResourceNames, version)
 
 				resources := snapshot.GetResourcesAndTTL(watch.Request.TypeUrl)
@@ -240,6 +251,7 @@ func (cache *snapshotCache) SetSnapshot(ctx context.Context, node string, snapsh
 				}
 
 				// discard the watch
+				// 丢弃watch
 				delete(info.watches, id)
 			}
 		}
@@ -247,6 +259,8 @@ func (cache *snapshotCache) SetSnapshot(ctx context.Context, node string, snapsh
 		// We only calculate version hashes when using delta. We don't
 		// want to do this when using SOTW so we can avoid unnecessary
 		// computational cost if not using delta.
+		// 我们只在使用delta的时候计算version hashes，我们不想要在使用SOTW
+		// 的时候这样做，这样我们可以避免不必要的计算损耗，如果不使用delta
 		if len(info.deltaWatches) > 0 {
 			err := snapshot.ConstructVersionMap()
 			if err != nil {
@@ -255,6 +269,7 @@ func (cache *snapshotCache) SetSnapshot(ctx context.Context, node string, snapsh
 		}
 
 		// process our delta watches
+		// 处理delta watches
 		for id, watch := range info.deltaWatches {
 			res, err := cache.respondDelta(
 				ctx,
@@ -308,6 +323,7 @@ func nameSet(names []string) map[string]bool {
 }
 
 // superset checks that all resources are listed in the names set.
+// superset检查所有的资源都列举在names set中
 func superset(names map[string]bool, resources map[string]types.ResourceWithTTL) error {
 	for resourceName := range resources {
 		if _, exists := names[resourceName]; !exists {

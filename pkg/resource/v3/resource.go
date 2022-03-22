@@ -26,6 +26,7 @@ const (
 	RuntimeType         = apiTypePrefix + "envoy.service.runtime.v3.Runtime"
 
 	// AnyType is used only by ADS
+	// AnyType只由ADS使用
 	AnyType = ""
 )
 

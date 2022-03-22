@@ -10,10 +10,12 @@ import (
 )
 
 // watches for all xDS resource types
+// 监听所有的xDS资源类型
 type watches struct {
 	responders map[string]*watch
 
 	// cases is a dynamic select case for the watched channels.
+	// cases是一个动态的watched channels
 	cases []reflect.SelectCase
 }
 

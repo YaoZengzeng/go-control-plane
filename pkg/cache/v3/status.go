@@ -60,6 +60,7 @@ type StatusInfo interface {
 }
 
 // statusInfo tracks the server state for the remote Envoy node.
+// statusInfo追踪远端的Envoy节点的server状态
 type statusInfo struct {
 	// node is the constant Envoy node metadata.
 	node *core.Node

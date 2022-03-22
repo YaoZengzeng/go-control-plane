@@ -40,6 +40,7 @@ import (
 )
 
 // Server is a collection of handlers for streaming discovery requests.
+// Server是一系列的handlers用于streaming discovery requests
 type Server interface {
 	endpointservice.EndpointDiscoveryServiceServer
 	clusterservice.ClusterDiscoveryServiceServer
@@ -162,6 +163,7 @@ func (c CallbackFuncs) OnFetchResponse(req *discovery.DiscoveryRequest, resp *di
 }
 
 // NewServer creates handlers from a config watcher and callbacks.
+// NewServer从一个config watcher以及callbacks创建handlers
 func NewServer(ctx context.Context, config cache.Cache, callbacks Callbacks) Server {
 	return NewServerAdvanced(rest.NewServer(config, callbacks),
 		sotw.NewServer(ctx, config, callbacks),

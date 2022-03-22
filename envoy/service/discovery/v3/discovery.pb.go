@@ -27,6 +27,7 @@ const (
 
 // A DiscoveryRequest requests a set of versioned resources of the same type for
 // a given Envoy node on some API.
+// 一个DiscoveryRequest请求一系列的有着同样类型的versioned resources，对于给定的Envoy node
 // [#next-free-field: 7]
 type DiscoveryRequest struct {
 	state         protoimpl.MessageState
@@ -40,6 +41,10 @@ type DiscoveryRequest struct {
 	// configuration. ACK/NACK takes place by returning the new API config version
 	// as applied or the previous API config version respectively. Each type_url
 	// (see below) has an independent version associated with it.
+	// 提供在request message中的version_info会是最近刚刚成功处理的response的version_info
+	// 或者为空，对于第一个请求，在收到一个response之后，直到Envoy实例准备好ACK/NACK新的配置
+	// 之后，不期望发送新的请求，ACK/NACK发生在返回新的应用的API配置版本或者之前的API配置版本
+	// 每个type_url有着独立的version相关联
 	VersionInfo string `protobuf:"bytes,1,opt,name=version_info,json=versionInfo,proto3" json:"version_info,omitempty"`
 	// The node making the request.
 	Node *v3.Node `protobuf:"bytes,2,opt,name=node,proto3" json:"node,omitempty"`
@@ -49,6 +54,8 @@ type DiscoveryRequest struct {
 	// resources for the Envoy instance to be returned. The LDS and CDS responses
 	// will then imply a number of resources that need to be fetched via EDS/RDS,
 	// which will be explicitly enumerated in resource_names.
+	// 如果为空，则返回对应API的所有资源，LDS/CDS可能有空的resource_names，但是EDS/RDS根据
+	// LDS/CDS的返回值会在resource_names中进行枚举
 	ResourceNames []string `protobuf:"bytes,3,rep,name=resource_names,json=resourceNames,proto3" json:"resource_names,omitempty"`
 	// Type of the resource that is being requested, e.g.
 	// "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This is implicit
@@ -60,6 +67,7 @@ type DiscoveryRequest struct {
 	// may be empty only if 1) this is a non-persistent-stream xDS such as HTTP,
 	// or 2) the client has not yet accepted an update in this xDS stream (unlike
 	// delta, where it is populated only for new explicit ACKs).
+	// nonce对应已经被ACK/NACKed的DiscoveryResponse
 	ResponseNonce string `protobuf:"bytes,5,opt,name=response_nonce,json=responseNonce,proto3" json:"response_nonce,omitempty"`
 	// This is populated when the previous :ref:`DiscoveryResponse <envoy_v3_api_msg_service.discovery.v3.DiscoveryResponse>`
 	// failed to update configuration. The *message* field in *error_details* provides the Envoy

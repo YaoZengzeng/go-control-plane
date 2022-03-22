@@ -41,10 +41,14 @@ type DeltaRequest = discovery.DeltaDiscoveryRequest
 // applied version identifier, and resource names hint. The watch should send
 // the responses when they are ready. The watch can be canceled by the
 // consumer, in effect terminating the watch for the request.
+// ConfigWatcher请求监听配置资源，通过一个node，最后应用的version identifier以及resource name hint
+// 这个watch应该发送responses，当它们处于ready时
 // ConfigWatcher implementation must be thread-safe.
 type ConfigWatcher interface {
 	// CreateWatch returns a new open watch from a non-empty request.
+	// CreateWatch返回一个新的open watch，从一个非空的request
 	// An individual consumer normally issues a single open watch by each type URL.
+	// 单个的consumer一般发送一个open watch，通过每种type URL
 	//
 	// The provided channel produces requested resources as responses, once they are available.
 	//
@@ -69,6 +73,7 @@ type ConfigFetcher interface {
 }
 
 // Cache is a generic config cache with a watcher.
+// Cache是一个有着watcher的通用配置缓存
 type Cache interface {
 	ConfigWatcher
 	ConfigFetcher

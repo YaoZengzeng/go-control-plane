@@ -40,6 +40,9 @@ const (
 	// protocol inference for plaintext listeners. If ALPN data is available, it
 	// is preferred, otherwise protocol inference is used. In almost all cases,
 	// this is the right option to choose for this setting.
+	// 对于每个新的连接，connection manager会决定使用哪个codec，这个mode支持TLS listener
+	// 的ALPN以及plaintext listener的协议推理，如果ALPN数据可用的话，它是优先的
+	// 否则使用协议推理，在几乎所有场景下，这都是正确的配置选择
 	HttpConnectionManager_AUTO HttpConnectionManager_CodecType = 0
 	// The connection manager will assume that the client is speaking HTTP/1.1.
 	HttpConnectionManager_HTTP1 HttpConnectionManager_CodecType = 1

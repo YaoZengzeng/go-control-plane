@@ -41,11 +41,13 @@ const (
 )
 
 func makeCluster(clusterName string) *cluster.Cluster {
+	// 构建cluster
 	return &cluster.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       durationpb.New(5 * time.Second),
 		ClusterDiscoveryType: &cluster.Cluster_Type{Type: cluster.Cluster_LOGICAL_DNS},
 		LbPolicy:             cluster.Cluster_ROUND_ROBIN,
+		// 构建endpoint
 		LoadAssignment:       makeEndpoint(clusterName),
 		DnsLookupFamily:      cluster.Cluster_V4_ONLY,
 	}
@@ -55,6 +57,7 @@ func makeEndpoint(clusterName string) *endpoint.ClusterLoadAssignment {
 	return &endpoint.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []*endpoint.LocalityLbEndpoints{{
+			// 包含的一系列endpoints
 			LbEndpoints: []*endpoint.LbEndpoint{{
 				HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 					Endpoint: &endpoint.Endpoint{
@@ -62,6 +65,7 @@ func makeEndpoint(clusterName string) *endpoint.ClusterLoadAssignment {
 							Address: &core.Address_SocketAddress{
 								SocketAddress: &core.SocketAddress{
 									Protocol: core.SocketAddress_TCP,
+									// upstream的地址
 									Address:  UpstreamHost,
 									PortSpecifier: &core.SocketAddress_PortValue{
 										PortValue: UpstreamPort,
@@ -77,8 +81,10 @@ func makeEndpoint(clusterName string) *endpoint.ClusterLoadAssignment {
 }
 
 func makeRoute(routeName string, clusterName string) *route.RouteConfiguration {
+	// 构建路由
 	return &route.RouteConfiguration{
 		Name: routeName,
+		// 包含一系列VirtualHosts
 		VirtualHosts: []*route.VirtualHost{{
 			Name:    "local_service",
 			Domains: []string{"*"},
@@ -91,9 +97,11 @@ func makeRoute(routeName string, clusterName string) *route.RouteConfiguration {
 				Action: &route.Route_Route{
 					Route: &route.RouteAction{
 						ClusterSpecifier: &route.RouteAction_Cluster{
+							// 目标cluster
 							Cluster: clusterName,
 						},
 						HostRewriteSpecifier: &route.RouteAction_HostRewriteLiteral{
+							// host header会被替换
 							HostRewriteLiteral: UpstreamHost,
 						},
 					},
@@ -105,6 +113,7 @@ func makeRoute(routeName string, clusterName string) *route.RouteConfiguration {
 
 func makeHTTPListener(listenerName string, route string) *listener.Listener {
 	// HTTP filter configuration
+	// 构建HTTP filter的配置
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: "http",
@@ -115,6 +124,7 @@ func makeHTTPListener(listenerName string, route string) *listener.Listener {
 			},
 		},
 		HttpFilters: []*hcm.HttpFilter{{
+			// 只有一个路由的http filter
 			Name: wellknown.Router,
 		}},
 	}
@@ -126,6 +136,7 @@ func makeHTTPListener(listenerName string, route string) *listener.Listener {
 	return &listener.Listener{
 		Name: listenerName,
 		Address: &core.Address{
+			// 监听地址
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
 					Protocol: core.SocketAddress_TCP,
@@ -136,6 +147,7 @@ func makeHTTPListener(listenerName string, route string) *listener.Listener {
 				},
 			},
 		},
+		// 一系列的filter chains
 		FilterChains: []*listener.FilterChain{{
 			Filters: []*listener.Filter{{
 				Name: wellknown.HTTPConnectionManager,
@@ -168,6 +180,7 @@ func makeConfigSource() *core.ConfigSource {
 func GenerateSnapshot() *cache.Snapshot {
 	snap, _ := cache.NewSnapshot("1",
 		map[resource.Type][]types.Resource{
+			// 构建类型到实例的映射
 			resource.ClusterType:  {makeCluster(ClusterName)},
 			resource.RouteType:    {makeRoute(RouteName, ClusterName)},
 			resource.ListenerType: {makeHTTPListener(ListenerName, RouteName)},

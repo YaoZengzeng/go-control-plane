@@ -3,11 +3,13 @@ package cache
 import "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 // Resources is a versioned group of resources.
+// Resources是带版本的一系列资源
 type Resources struct {
 	// Version information.
 	Version string
 
 	// Items in the group indexed by name.
+	// 以名字作为索引的Items
 	Items map[string]types.ResourceWithTTL
 }
 

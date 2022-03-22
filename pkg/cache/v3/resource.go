@@ -125,10 +125,12 @@ func GetResourceReferences(resources map[string]types.ResourceWithTTL) map[resou
 }
 
 // GetAllResourceReferences returns a map of dependent resources keyed by resources type, given all resources.
+// 给定所有的资源，GetAllResourceReferences返回一个dependent resources的map，以resources type作为键值
 func GetAllResourceReferences(resourceGroups [types.UnknownType]Resources) map[resource.Type]map[string]bool {
 	ret := map[resource.Type]map[string]bool{}
 
 	// We only check resources that we expect to have references to other resources.
+	// 我们只检查可能引用其他资源的资源
 	responseTypesWithReferences := map[types.ResponseType]struct{}{
 		types.Cluster:     {},
 		types.Listener:    {},
@@ -155,11 +157,13 @@ func getResourceReferences(resources map[string]types.ResourceWithTTL, out map[r
 		case *endpoint.ClusterLoadAssignment:
 			// No dependencies.
 		case *cluster.Cluster:
+			// 获取cluster的依赖
 			getClusterReferences(v, out)
 		case *route.RouteConfiguration:
 			// References to clusters in both routes (and listeners) are not included
 			// in the result, because the clusters are retrieved in bulk currently,
 			// and not by name.
+			// 同时在routes以及listeners中的对于Clusters的引用
 		case *route.ScopedRouteConfiguration:
 			getScopedRouteReferences(v, out)
 		case *listener.Listener:
@@ -177,6 +181,7 @@ func mapMerge(dst map[string]bool, src map[string]bool) {
 }
 
 // Clusters will reference either the endpoint's cluster name or ServiceName override.
+// Clusters会引用endpoint的cluster name或者ServiceName的override
 func getClusterReferences(src *cluster.Cluster, out map[resource.Type]map[string]bool) {
 	endpoints := map[string]bool{}
 
@@ -184,6 +189,7 @@ func getClusterReferences(src *cluster.Cluster, out map[resource.Type]map[string
 	case *cluster.Cluster_Type:
 		if typ.Type == cluster.Cluster_EDS {
 			if src.EdsClusterConfig != nil && src.EdsClusterConfig.ServiceName != "" {
+				// 有对于service name的引用
 				endpoints[src.EdsClusterConfig.ServiceName] = true
 			} else {
 				endpoints[src.Name] = true
@@ -201,10 +207,12 @@ func getClusterReferences(src *cluster.Cluster, out map[resource.Type]map[string
 }
 
 // HTTP listeners will either reference ScopedRoutes or Routes.
+// HTTP listeners要么引用ScopedRoutes或者Routes
 func getListenerReferences(src *listener.Listener, out map[resource.Type]map[string]bool) {
 	routes := map[string]bool{}
 
 	// Extract route configuration names from HTTP connection manager.
+	// 从HTTP connection manager中抽取出路由配置
 	for _, chain := range src.FilterChains {
 		for _, filter := range chain.Filters {
 			if filter.Name != wellknown.HTTPConnectionManager {
@@ -217,11 +225,13 @@ func getListenerReferences(src *listener.Listener, out map[resource.Type]map[str
 			}
 
 			// If we are using RDS, add the referenced the route name.
+			// 如果我们使用RDS，添加引用的route name
 			if name := config.GetRds().GetRouteConfigName(); name != "" {
 				routes[name] = true
 			}
 
 			// If the scoped route mapping is embedded, add the referenced route resource names.
+			// 如果内嵌了scoped route mapping，增加引用的路由资源对象
 			for _, s := range config.GetScopedRoutes().GetScopedRouteConfigurationsList().GetScopedRouteConfigurations() {
 				routes[s.RouteConfigurationName] = true
 			}

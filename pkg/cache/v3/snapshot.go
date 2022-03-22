@@ -23,15 +23,19 @@ import (
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
+// Snapshot是xDS资源的内部一致的snapshot
 // Consistency is important for the convergence as different resource types
 // from the snapshot may be delivered to the proxy in arbitrary order.
+// 一致性对于收敛是很重要的，因为snapshot中不同的资源类型可能以任意顺序传递给proxy
 type Snapshot struct {
 	Resources [types.UnknownType]Resources
 
 	// VersionMap holds the current hash map of all resources in the snapshot.
+	// VersionMap在snapshot中维护所有资源当前的hash map
 	// This field should remain nil until it is used, at which point should be
 	// instantiated by calling ConstructVersionMap().
 	// VersionMap is only to be used with delta xDS.
+	// VersionMap只在delta xDS中使用
 	VersionMap map[string]map[string]string
 }
 
@@ -39,6 +43,8 @@ var _ ResourceSnapshot = &Snapshot{}
 
 // NewSnapshot creates a snapshot from response types and a version.
 // The resources map is keyed off the type URL of a resource, followed by the slice of resource objects.
+// NewSnapshot从response types以及一个version创建snapshot
+// resources map以一个资源的URL作为key，后面跟着一系列的资源对象-
 func NewSnapshot(version string, resources map[resource.Type][]types.Resource) (*Snapshot, error) {
 	out := Snapshot{}
 
@@ -73,13 +79,19 @@ func NewSnapshotWithTTLs(version string, resources map[resource.Type][]types.Res
 
 // Consistent check verifies that the dependent resources are exactly listed in the
 // snapshot:
+// 一致性检查确保依赖的资源有在snapshot中列举
 // - all EDS resources are listed by name in CDS resources
+// - 所有在CDS资源中的EDS资源都有列举
 // - all SRDS/RDS resources are listed by name in LDS resources
+// - 所有在LDS资源中的SRDS/RDS资源都有列举
 // - all RDS resources are listed by name in SRDS resources
+// - 所有在SRDS中的RDS资源都有被列举
 //
 // Note that clusters and listeners are requested without name references, so
 // Envoy will accept the snapshot list of clusters as-is even if it does not match
 // all references found in xDS.
+// 注意clusters以及listeners都可以在没有name references的情况下被请求，这样Envoy会接收
+// 一系列的clusters snapshot，即使它不匹配在xDS中发现的所有引用
 func (s *Snapshot) Consistent() error {
 	if s == nil {
 		return errors.New("nil snapshot")
@@ -88,6 +100,7 @@ func (s *Snapshot) Consistent() error {
 	referencedResources := GetAllResourceReferences(s.Resources)
 
 	// Loop through each referenced resource.
+	// 遍历每个引用的资源
 	referencedResponseTypes := map[types.ResponseType]struct{}{
 		types.Endpoint: {},
 		types.Route:    {},
@@ -96,6 +109,7 @@ func (s *Snapshot) Consistent() error {
 	for idx, items := range s.Resources {
 
 		// We only want to check resource types that are expected to be referenced by another resource type.
+		// 我们只检查可能被其他资源引用的资源类型
 		// Basically, if the consistency relationship is modeled as a DAG, we only want
 		// to check nodes that are expected to have edges pointing to it.
 		responseType := types.ResponseType(idx)
@@ -112,6 +126,7 @@ func (s *Snapshot) Consistent() error {
 			}
 
 			// Check superset.
+			// 检查是否是超集
 			if err := superset(referenceSet, items.Items); err != nil {
 				return fmt.Errorf("inconsistent %q reference: %w", typeURL, err)
 			}

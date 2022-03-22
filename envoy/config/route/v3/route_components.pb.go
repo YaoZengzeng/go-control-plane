@@ -344,6 +344,8 @@ func (RateLimit_Action_MetaData_Source) EnumDescriptor() ([]byte, []int) {
 // host header. This allows a single listener to service multiple top level domain path trees. Once
 // a virtual host is selected based on the domain, the routes are processed in order to see which
 // upstream cluster to route to or whether to perform a redirect.
+// virtual host是路由配置里的顶级元素，每个virtual host有一个logical name以及一系列路由到它的domains
+// 基于incoming requests的host header，这允许单个listener服务多个top level domain path trees
 // [#next-free-field: 22]
 type VirtualHost struct {
 	state         protoimpl.MessageState
